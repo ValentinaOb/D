@@ -368,69 +368,93 @@ def plot_distance_cc_chart(
 # 6. RADAR CHART
 
 def plot_radar_chart(
-    V,
+    R,
     output_dir
 ):
 
-    labels = [
+    # Підготовка даних
 
-        pretty_metric_name(c)
+    radar = R.copy()
 
-        for c in V.columns
+    # Для cost-метрик інвертуємо шкалу:
+    # чим ближче до 1, тим краще
+
+    for col in radar.columns:
+
+        if col not in BENEFIT_METRICS:
+
+            radar[col] = (
+                radar[col].max()
+                - radar[col]
+            )
+
+    categories = [
+
+        pretty_metric_name(col)
+
+        for col in radar.columns
     ]
 
-    num_vars = len(labels)
+    # Розрахунок кутів
+
+    N = len(categories)
 
     angles = np.linspace(
         0,
         2 * np.pi,
-        num_vars,
+        N,
         endpoint=False
     ).tolist()
 
-    angles += angles[:1]
+    # Налаштування графіка
 
     fig, ax = plt.subplots(
-
-        figsize=(9, 9),
-
-        subplot_kw=dict(
-            polar=True
-        )
+        figsize=(10, 10),
+        subplot_kw={
+            "projection": "polar"
+        }
     )
 
-    for framework in V.index:
+    # Побудова полігонів
+
+    for framework in radar.index:
 
         values = (
-            V.loc[framework]
+            radar.loc[framework]
+            .values
             .tolist()
         )
 
+        # Замкнення контуру
+
         values += values[:1]
+        plot_angles = angles + angles[:1]
 
         ax.plot(
-            angles,
+            plot_angles,
             values,
             linewidth=2,
             label=framework
         )
 
         ax.fill(
-            angles,
+            plot_angles,
             values,
             alpha=0.15
         )
 
-    ax.set_xticks(
-        angles[:-1]
-    )
+    # Підписи осей
+
+    ax.set_xticks(angles)
 
     ax.set_xticklabels(
-        labels
+        categories
     )
 
+    ax.set_rlabel_position(0)
+
     plt.title(
-        "Radar Chart of Weighted Normalized Metrics",
+        "Radar Chart of TOPSIS Normalized Metrics",
         y=1.08
     )
 
@@ -443,7 +467,6 @@ def plot_radar_chart(
         output_dir,
         "06_radar_chart.png"
     )
-
 
 def prepare_visual_normalized_matrix(R):
 
@@ -589,7 +612,7 @@ def main():
     )
 
     plot_radar_chart(
-        V_plot,
+        R,
         args.output
     )
 
